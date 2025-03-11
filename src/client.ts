@@ -26,24 +26,29 @@ export const createAudioFileFromText = async (
   ): Promise<Buffer> => {
     const client = getSimpleApiConfig(apiKey);
 
-    const audioStream = await client.generate({
-      voice: voiceId,
-      model_id: modelId,
-      text,
-      voice_settings: {
-        stability: stability,
-        similarity_boost: similarityBoost,
-        style: style
-        }
-    });
-  
-    const chunks: Buffer[] = [];
-    for await (const chunk of audioStream) {
-      chunks.push(chunk);
+    try{
+      const audioStream = await client.generate({
+        voice: voiceId,
+        model_id: modelId,
+        text,
+        voice_settings: {
+          stability: stability,
+          similarity_boost: similarityBoost,
+          style: style
+          }
+      });
+    
+      const chunks: Buffer[] = [];
+      for await (const chunk of audioStream) {
+        chunks.push(chunk);
+      }
+    
+      const content = Buffer.concat(chunks);
+      return content;
     }
-  
-    const content = Buffer.concat(chunks);
-    return content;
+    catch(e:any){
+      throw new sdk.RuntimeError('Error during text to speech conversion, first step : ', e)
+    }
 };
 
 export function createUUID(){

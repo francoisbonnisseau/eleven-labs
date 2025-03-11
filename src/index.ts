@@ -1,6 +1,8 @@
 import * as sdk from '@botpress/sdk'
 import * as bp from '.botpress'
 import axios from 'axios'
+import crypto from 'crypto'
+
 import { ElevenLabsClient, ElevenLabs } from "elevenlabs";
 import { ReadableStream } from 'web-streams-polyfill';
 
@@ -26,15 +28,12 @@ export default new bp.Integration({
 
       try {
         const speech = await createAudioFileFromText(text, apiKey, voiceId, modelId, stability, similarityBoost, style)
-        const name = createUUID()
-        
-        const file = await args.client.uploadFile({
-          key: name,
-          content: speech,
-        })
-
-        args.logger.forBot().info('Text to speech conversion successful', file)
-        return {output: file}
+        // const name = createUUID()
+        args.logger.forBot().info('Text to speech conversion successful', speech)
+        const fileUrl = await uploadFile(text, speech, args.client)
+        args.logger.forBot().info(fileUrl)
+        // args.logger.forBot().info('Text to speech conversion successful', file)
+        return {output: fileUrl}
 
       }
       catch(e:any){
@@ -108,6 +107,7 @@ export default new bp.Integration({
     }
   },
   channels: {},
+  handler: async () => {},
 })
 
 
@@ -126,4 +126,34 @@ async function fetchAudio(historyItemId: string, apiKey: string) {
   } catch (error: any) {
     throw new sdk.RuntimeError('Error fetching audio', error);
   }
+}
+
+function generateFileKey(prefix: string, input: object, suffix?: string) {
+  const json = JSON.stringify(input)
+  const hash = crypto.createHash('sha1')
+
+  hash.update(json)
+  const hexHash = hash.digest('hex')
+
+  return prefix + Date.now() + '_' + hexHash + suffix
+}
+
+async function uploadFile(input:any, buffer:any, client:any){
+      const expiresAt: string = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+
+      // File storage is billed to the workspace of the bot that called this action.
+      const { file } = await client.uploadFile({
+        key: generateFileKey('elevenlabs-', input, '.mp3'),
+        content: buffer,
+        contentType: 'audio/mpeg',
+        accessPolicies: ['public_content'],
+        tags: {
+          source: 'integration',
+          action: 'generateaudio',
+        },
+        expiresAt,
+        publicContentImmediatelyAccessible: true,
+      })
+
+      return file.url
 }

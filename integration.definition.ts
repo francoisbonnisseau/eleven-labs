@@ -4,11 +4,11 @@ import { integrationName, name } from './package.json'
 
 export default new IntegrationDefinition({
   name: integrationName ?? name,
-  version: '1.0.0',
+  version: '1.1.0',
   readme: 'hub.md',
   icon: 'icon.svg',
   title: 'Eleven Labs',
-  description: 'Eleven Labs integration',
+  description: 'Eleven Labs integration - personnal',
   configuration: {
     schema: z.object({
       apiKey: z.string().describe('ElevenLabs API Key'),
@@ -31,7 +31,7 @@ export default new IntegrationDefinition({
       },
       output: {
         schema: z.object({
-          output: z.record(z.unknown()),
+          output: z.string(),
         }),
       },
     },
